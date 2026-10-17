@@ -16,7 +16,7 @@ done
 mkdir -p pkg
 # Reproducible-ish archive: root ownership, fixed perms, sorted entries, fixed mtime
 tar --owner=0 --group=0 --numeric-owner --sort=name \
-    --mtime="${VERSION//./-} 00:00:00 UTC" \
+    --mtime="$(echo "${VERSION:0:10}" | tr . -) 00:00:00 UTC" \
     --mode='u=rwX,go=rX' \
     -C src -cJf "$PKG" .
 
