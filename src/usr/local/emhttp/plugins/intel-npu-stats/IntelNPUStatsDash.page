@@ -1,0 +1,59 @@
+Menu="Dashboard:0"
+Cond="version_compare(parse_ini_file('/etc/unraid-version')['version'],'6.12.0', '>=')"
+---
+<?php
+/*
+ * intel-npu-stats dashboard tile. Read-only.
+ * Copyright (c) 2026 RyRyMason. MIT License (see LICENSE).
+ * Tile structure adapted from gpustat (MIT, Copyright (c) 2020-2022 b3rs3rk).
+ */
+$pluginname = "intelnpustats";
+$mytiles[$pluginname]['column2'] =
+<<<EOT
+<tbody id="tblIntelNPUDash" title="_(Intel NPU)_">
+<tr><td>
+  <span class='tile-header'>
+    <span class='tile-header-left'>
+      <i class='fa fa-microchip f32'></i>
+      <div class='section'>_(Intel NPU)_<br>
+        <span><i class='ups fa fa-line-chart'></i> _(Busy)_: <span class='npu-busy'>…</span></span>
+      </div>
+    </span>
+  </span>
+</td></tr>
+<tr><td><span class='w36'><i class='ups fa fa-fw icon-cpu'></i>_(Busy)_</span><span class='w44'><span class='npu-busy load'>…</span><div class='usage-disk sys'><span class='npu-busybar'></span><span></span></div></span></td></tr>
+<tr><td><span class='w36'><i class='ups fa fa-fw fa-clock-o'></i>_(Clock (MHz))_</span><span class='w44'><span class='npu-freq load'>…</span><div class='usage-disk sys'><span class='npu-freqbar'></span><span></span></div></span></td></tr>
+<tr><td><span class='w36'><i class='ups fa fa-fw icon-ram'></i>_(Memory)_</span><span class='w44'><span class='npu-mem'>…</span></span></td></tr>
+<tr><td><span class='w36'><i class='ups fa fa-fw fa-info-circle'></i>_(Scheduler - PCI)_</span><span class='w44'><span class='npu-sched'>…</span> &emsp; <span class='npu-pci'>…</span></span></td></tr>
+</tbody>
+EOT;
+?>
+<script type="text/javascript">
+(function () {
+  var URL = '/plugins/intel-npu-stats/npustat.php', INTERVAL_MS = 2000, prev = null;
+  function bar(cls, pct) { $('.' + cls).css('width', Math.max(0, Math.min(100, pct)) + '%'); }
+  function na() {
+    $('.npu-busy,.npu-freq,.npu-mem,.npu-sched,.npu-pci').text('n/a');
+    bar('npu-busybar', 0); bar('npu-freqbar', 0); prev = null;
+  }
+  function poll() {
+    if (document.hidden) return;                       // no polling in background tabs
+    $.ajax({ url: URL, cache: false, dataType: 'json', timeout: 1500 }).done(function (d) {
+      if (!d || !d.ok) { na(); return; }
+      if (prev && d.ts_us > prev.ts_us && d.busy_us >= prev.busy_us) {   // skip on counter reset
+        var pct = Math.max(0, Math.min(100, (d.busy_us - prev.busy_us) * 100 / (d.ts_us - prev.ts_us)));
+        $('.npu-busy').text(pct.toFixed(0) + '%'); bar('npu-busybar', pct);
+      }
+      prev = { ts_us: d.ts_us, busy_us: d.busy_us };
+      if (d.freq_mhz !== null) {
+        $('.npu-freq').text(d.freq_mhz);
+        bar('npu-freqbar', d.max_freq_mhz ? d.freq_mhz * 100 / d.max_freq_mhz : 0);
+      } else { $('.npu-freq').text('n/a'); bar('npu-freqbar', 0); }
+      $('.npu-mem').text(d.mem_bytes !== null ? (d.mem_bytes / 1048576).toFixed(0) + ' MiB' : 'n/a');
+      $('.npu-sched').text(d.sched_mode || 'n/a');
+      $('.npu-pci').text(d.pci || '');
+    }).fail(na);
+  }
+  $(function () { poll(); setInterval(poll, INTERVAL_MS); });
+})();
+</script>
