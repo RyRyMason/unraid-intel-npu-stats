@@ -1,0 +1,12 @@
+# Keep this repo to plugin code only: no logs, diagnostics, configs or screenshots
+*.log
+*.json
+*.cfg
+*.zip
+*.png
+*.jpg
+diagnostics/
+Diagnostics/
+.DS_Store
+Thumbs.db
+desktop.ini
