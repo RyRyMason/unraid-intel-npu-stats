@@ -22,7 +22,7 @@ $mytiles[$pluginname]['column2'] =
   </span>
 </td></tr>
 <tr><td><span class='w36'><i class='ups fa fa-fw icon-cpu'></i>_(Busy)_</span><span class='w44'><span class='npu-busy load'>…</span><div class='usage-disk sys'><span class='npu-busybar'></span><span></span></div></span></td></tr>
-<tr><td><span class='w36'><i class='ups fa fa-fw fa-clock-o'></i>_(Clock (MHz))_</span><span class='w44'><span class='npu-freq load'>…</span><div class='usage-disk sys'><span class='npu-freqbar'></span><span></span></div></span></td></tr>
+<tr><td><span class='w36' title="_(Highest NPU clock seen in the last 10 seconds. A single reading is often 0 because the NPU powers down between jobs.)_"><i class='ups fa fa-fw fa-clock-o'></i>_(Peak Clock (MHz))_</span><span class='w44'><span class='npu-freq load'>…</span><div class='usage-disk sys'><span class='npu-freqbar'></span><span></span></div></span></td></tr>
 <tr><td><span class='w36'><i class='ups fa fa-fw icon-ram'></i>_(Memory)_</span><span class='w44'><span class='npu-mem'>…</span></span></td></tr>
 <tr><td><span class='w36'><i class='ups fa fa-fw fa-info-circle'></i>_(Scheduler - PCI)_</span><span class='w44'><span class='npu-sched'>…</span> &emsp; <span class='npu-pci'>…</span></span></td></tr>
 </tbody>
@@ -31,10 +31,11 @@ EOT;
 <script type="text/javascript">
 (function () {
   var URL = '/plugins/intel-npu-stats/npustat.php', INTERVAL_MS = 2000, prev = null;
+  var PEAK_WINDOW_US = 10000000, freqSamples = [];       // clock samples for the 10 s peak
   function bar(cls, pct) { $('.' + cls).css('width', Math.max(0, Math.min(100, pct)) + '%'); }
   function na() {
     $('.npu-busy,.npu-freq,.npu-mem,.npu-sched,.npu-pci').text('n/a');
-    bar('npu-busybar', 0); bar('npu-freqbar', 0); prev = null;
+    bar('npu-busybar', 0); bar('npu-freqbar', 0); prev = null; freqSamples = [];
   }
   function poll() {
     if (document.hidden) return;                       // no polling in background tabs
@@ -46,9 +47,13 @@ EOT;
       }
       prev = { ts_us: d.ts_us, busy_us: d.busy_us };
       if (d.freq_mhz !== null) {
-        $('.npu-freq').text(d.freq_mhz);
-        bar('npu-freqbar', d.max_freq_mhz ? d.freq_mhz * 100 / d.max_freq_mhz : 0);
-      } else { $('.npu-freq').text('n/a'); bar('npu-freqbar', 0); }
+        // Instantaneous clock is often 0 between jobs; show the peak over the last 10 s instead.
+        freqSamples.push({ ts_us: d.ts_us, mhz: d.freq_mhz });
+        freqSamples = freqSamples.filter(function (s) { return s.ts_us <= d.ts_us && d.ts_us - s.ts_us <= PEAK_WINDOW_US; });
+        var peak = Math.max.apply(null, freqSamples.map(function (s) { return s.mhz; }));
+        $('.npu-freq').text(peak);
+        bar('npu-freqbar', d.max_freq_mhz ? peak * 100 / d.max_freq_mhz : 0);
+      } else { freqSamples = []; $('.npu-freq').text('n/a'); bar('npu-freqbar', 0); }
       $('.npu-mem').text(d.mem_bytes !== null ? (d.mem_bytes / 1048576).toFixed(0) + ' MiB' : 'n/a');
       $('.npu-sched').text(d.sched_mode || 'n/a');
       $('.npu-pci').text(d.pci || '');

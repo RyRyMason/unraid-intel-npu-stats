@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "intel-npu-stats">
 <!ENTITY author    "RyRyMason">
-<!ENTITY version   "2026.10.17">
-<!ENTITY md5       "e7ccd574ba9c21e23a09dd1fdcbf7bdb">
+<!ENTITY version   "2026.10.17a">
+<!ENTITY md5       "2acfc9c93504f07b8c40bd553d69aec5">
 <!ENTITY gitURL    "https://raw.githubusercontent.com/RyRyMason/unraid-intel-npu-stats/main">
 <!ENTITY pluginURL "&gitURL;/&name;.plg">
 <!ENTITY plgPATH   "/boot/config/plugins/&name;">
@@ -19,6 +19,9 @@
         support="https://github.com/RyRyMason/unraid-intel-npu-stats/issues">
 
 <CHANGES>
+###2026.10.17a
+- Clock row now shows the peak clock over the last 10 seconds. A single reading is often 0 because the NPU powers down between jobs.
+
 ###2026.10.17
 - Initial release: read-only dashboard tile for Intel NPU busy %, clock, memory and scheduler mode (intel_vpu sysfs).
 </CHANGES>

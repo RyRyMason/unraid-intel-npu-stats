@@ -7,7 +7,7 @@ It shows:
 | Field | Source (`intel_vpu` sysfs) |
 |---|---|
 | Busy % | `npu_busy_time_us`, delta between two polls |
-| Clock (MHz) | `npu_current_frequency_mhz`, bar scaled to `npu_max_frequency_mhz` |
+| Peak Clock (MHz) | Highest `npu_current_frequency_mhz` reading in the last 10 s, bar scaled to `npu_max_frequency_mhz`. A single reading is often 0 because the NPU powers down between jobs. |
 | Memory | `npu_memory_utilization` |
 | Scheduler | `sched_mode` |
 
